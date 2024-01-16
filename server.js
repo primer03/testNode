@@ -2,7 +2,7 @@ const express = require('express');
 require('dotenv').config();
 const app = express();
 const pool = require('./db');
-// const port = process.env.DB_PORT || 3000;
+const port = process.env.DB_PORT || 3000;
 
 app.get('/', (req, res) => res.send('Hello World!'));
 app.get('/api/student', async (req, res) => {
@@ -15,4 +15,4 @@ app.get('/api/student', async (req, res) => {
     }
 });
 
-app.listen(3000, () => console.log(`Example app listening on port ${3000}!`));
+app.listen(port, () => console.log(`Example app listening on port ${port}!`));
