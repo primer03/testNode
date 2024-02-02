@@ -63,18 +63,15 @@ app.get('/api/score/generate', async (req, res) => {
     }
 });
 
-app.put('/api/score/:id', upload.none(), async (req, res) => {
+app.put('/api/score/', upload.none(), async (req, res) => {
     try {
-        const { id } = req.params;
-        var { score } = req.body;
-        var oldScore = await pool.query('SELECT * FROM scores WHERE id = $1', [id]);
-        oldScore = oldScore.rows[0].score;
-        score = parseInt(score) + parseInt(oldScore);
+        const { name, score } = req.body;
+        const oldscore = await pool.query('SELECT * FROM scores WHERE name = $1', [name]);
         const updateScore = await pool.query(
-            'UPDATE scores SET score = $1 WHERE id = $2',
-            [score, id]
+            `UPDATE scores SET score = $1 WHERE name = $2 RETURNING *`,
+            [parseInt(oldscore.rows[0].score) + parseInt(score), name]
         );
-        res.json('Data updated successfully');
+        res.json(updateScore.rows[0]);
     } catch (err) {
         console.error(`Error while updating data ${err.message}`);
     }
@@ -89,10 +86,62 @@ app.get('/api/messages', async (req, res) => {
     }
 });
 
+app.get('/api/messages/createtable', async (req, res) => {
+    try {
+        const messages = await pool.query(`CREATE TABLE IF NOT EXISTS messages (
+            id SERIAL PRIMARY KEY, 
+            generation TEXT NOT NULL, 
+            type TEXT NOT NULL,
+            url TEXT NOT NULL,
+            folder TEXT NOT NULL,
+            public_id TEXT NOT NULL,
+            width INT NOT NULL,
+            height INT NOT NULL,
+            active BOOLEAN DEFAULT FALSE
+        )`);
+        res.json(messages.rows);
+    } catch (err) {
+        console.error(`Error while creating table ${err.message}`);
+    }
+});
+
 app.get('/api/messages/count', async (req, res) => {
     try {
         const messages = await pool.query('SELECT COUNT(*) FROM messages');
         res.json(messages.rows);
+    } catch (err) {
+        console.error(`Error while fetching data ${err.message}`);
+    }
+});
+
+app.post('/api/messages', upload.none(), async (req, res) => {
+    try {
+        const { generation, type, url, folder, public_id, width, height } = req.body;
+        console.log(generation, type, url, folder, public_id, width, height);
+        const newMessage = await pool.query(
+            'INSERT INTO messages (generation, type, url, folder, public_id, width, height) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+            [generation, type, url, folder, public_id, width, height]
+        );
+        res.json({status: 'success', message: 'Data inserted successfully'});
+    } catch (err) {
+        console.error(`Error while inserting data ${err.message}`);
+    }
+
+});
+
+app.get('/api/messages/:public_id', async (req, res) => {
+    try {
+        const { public_id } = req.params;
+        const messages = await pool.query('SELECT * FROM messages WHERE public_id = $1', [public_id]);
+        if(messages.rows[0]['active'] == false) {
+            const updateMessage = await pool.query(
+                'UPDATE messages SET active = $1 WHERE public_id = $2',
+                [true, public_id]
+            );
+            return res.json({status: 'success', message: 'Data updated successfully', data: messages.rows[0]});
+        }else{
+            return res.json({status: 'error', message: 'Data already updated'});
+        }
     } catch (err) {
         console.error(`Error while fetching data ${err.message}`);
     }
