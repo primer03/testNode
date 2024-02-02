@@ -1,11 +1,16 @@
 // Import necessary modules
 const express = require('express');
 require('dotenv').config();
+const cors = require('cors'); // Import CORS module
 const app = express();
 const pool = require('./db'); // Ensure you have configured your database connection correctly
 const port = process.env.DB_PORT || 5000;
 const multer = require('multer');
 const upload = multer();
+
+// Use CORS middleware for all routes
+// This allows all origins, for specific origins, replace '*' with an array of origins e.g., ['http://localhost:3000']
+app.use(cors());
 
 // Middleware to parse JSON bodies
 app.use(express.json());
