@@ -3,14 +3,15 @@ require('dotenv').config();
 const app = express();
 const pool = require('./db');
 const port = process.env.DB_PORT || 3000;
-
+const multer = require('multer');
+const upload = multer();
 // เพิ่ม express.json() middleware เพื่อแปลง body ของ request ที่เป็น JSON
 app.use(express.json());
 
 app.get('/', (req, res) => res.send('Hello World!'));
-app.get('/api/student', async (req, res) => {
+app.get('/api/score', async (req, res) => {
     try {
-        const users = await pool.query('SELECT * FROM student_data');
+        const users = await pool.query('SELECT * FROM scores ORDER BY id ASC');
         res.json(users.rows);
     } catch (err) {
         console.error(`Error while fetching data ${err.message}`);
@@ -18,17 +19,66 @@ app.get('/api/student', async (req, res) => {
     }
 });
 
-app.post('/api/student', async (req, res) => {
+// app.post('/api/score', upload.none(), async (req, res) => {
+//     try {
+//         const { student_name } = req.body;
+//         const newStudent = await pool.query(
+//             'INSERT INTO student_data (student_name) VALUES ($1) RETURNING *',
+//             [student_name]
+//         );
+//         res.json(newStudent.rows[0]);
+//     } catch (err) {
+//         console.error(`Error while inserting data ${err.message}`);
+//     }
+// });
+
+app.get('/api/score/genarate', async (req, res) => {
+    const scoreData = Array.from({ length: 27 }, (_, index) => {
+        return {
+            id: index + 1,
+            name: `รุ่นที่ ${index + 1}`,
+            score: 0,
+        };
+    });
     try {
-        const { student_name } = req.body;
-        const newStudent = await pool.query(
-            'INSERT INTO student_data (student_name) VALUES ($1) RETURNING *',
-            [student_name]
-        );
-        res.json(newStudent.rows[0]);
+        scoreData.forEach(async (data) => {
+            const { name, score } = data;
+            await pool.query(
+                'INSERT INTO scores (id, name, score) VALUES ($1, $2, $3)',
+                [data.id, name, score]
+            );
+        });
+        res.json(scoreData);
     } catch (err) {
         console.error(`Error while inserting data ${err.message}`);
     }
 });
 
-app.listen(port, () => console.log(`Example app listening on port ${port}!`));
+app.put('/api/score/:id', upload.none(),  async (req, res) => {
+    try {
+        const { id } = req.params;
+        var { score } = req.body;
+        var oldScore = await pool.query('SELECT * FROM scores WHERE id = $1', [id]);
+        oldScore = oldScore.rows[0].score;
+        score = parseInt(score) + parseInt(oldScore);
+        const updateScore = await pool.query(
+            'UPDATE scores SET score = $1 WHERE id = $2',
+            [score, id]
+        );
+        res.json('Data updated successfully');
+    } catch (err) {
+        console.error(`Error while updating data ${err.message}`);
+    }  
+});
+
+app.get('/api/messages', async (req, res) => {
+    try {
+        const messages = await pool.query('SELECT * FROM messages ORDER BY id ASC');
+        res.json(messages.rows);
+    } catch (err) {
+        console.error(`Error while fetching data ${err.message}`);
+    }
+});
+
+
+app.listen(port, () => console.log(`Server running on port ${port}`));
