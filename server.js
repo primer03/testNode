@@ -108,7 +108,14 @@ app.get('/api/messages/createtable', async (req, res) => {
 app.get('/api/messages/count', async (req, res) => {
     try {
         const messages = await pool.query('SELECT COUNT(*) FROM messages');
-        res.json(messages.rows);
+        if(messages.rows.length == 0) {
+            return res.json({status: 'success', message: 'Data already updated', data: {image: 0, video: 0}});
+        }else{
+            const image = await pool.query('SELECT COUNT(*) FROM messages WHERE type = $1', ['image']);
+            const video = await pool.query('SELECT COUNT(*) FROM messages WHERE type = $1', ['video']);
+            return res.json({status: 'success', message: 'Data already updated', data: {image: image.rows[0].count, video: video.rows[0].count, total: messages.rows[0].count}});
+        }
+        
     } catch (err) {
         console.error(`Error while fetching data ${err.message}`);
     }
