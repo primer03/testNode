@@ -147,7 +147,7 @@ app.get('/api/messages/:public_id', async (req, res) => {
             );
             return res.json({status: 'success', message: 'Data updated successfully', data: messages.rows[0]});
         }else{
-            return res.json({status: 'error', message: 'Data already updated'});
+            return res.json({status: 'error', message: 'Data already updated', data: messages.rows[0]});
         }
     } catch (err) {
         console.error(`Error while fetching data ${err.message}`);
