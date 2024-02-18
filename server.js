@@ -154,5 +154,17 @@ app.get('/api/messages/:public_id', async (req, res) => {
     }
 });
 
+app.post('/api/location', upload.none(), async (req, res) => {
+    try {
+        const { lat, lon} = req.body;
+        const newLocation = await pool.query(
+            'INSERT INTO location (lat, lon) VALUES ($1, $2) RETURNING *',
+            [lat, lon]
+        );
+        return res.json({status: 'success', message: 'Data inserted successfully',data : newLocation.rows[0]});
+    } catch (err) {
+        console.error(`Error while inserting data ${err.message}`);
+    }
+});
 // Start the server
 app.listen(port, () => console.log(`Server running on port ${port}`));
