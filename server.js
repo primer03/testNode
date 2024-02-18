@@ -166,5 +166,14 @@ app.post('/api/location', upload.none(), async (req, res) => {
         console.error(`Error while inserting data ${err.message}`);
     }
 });
+
+app.get('/api/location', async (req, res) => {
+    try {
+        const location = await pool.query('SELECT * FROM location ORDER BY id ASC');
+        res.json(location.rows);
+    } catch (err) {
+        console.error(`Error while fetching data ${err.message}`);
+    }
+});
 // Start the server
 app.listen(port, () => console.log(`Server running on port ${port}`));
